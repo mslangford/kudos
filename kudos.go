@@ -132,6 +132,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 
 	//	from balance
+	fmt.Println("from balance: " + args[0])
 	fromState, err = stub.GetState(args[0])
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
@@ -145,6 +146,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 
 	//	transfer points
+	fmt.Println("convert points")
 	points, err = strconv.Atoi(args[2])
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
@@ -156,6 +158,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 
 	//	to balance
+	fmt.Println("to balance: " + args[1])
 	toState, err = stub.GetState(args[1])
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
@@ -171,6 +174,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	//	apply transfer
 	toBal = toBal + int64(points)
 	fromBal = fromBal - int64(points)
+	fmt.Println("apply transfer - new from points " + strconv.Itoa(int(fromBal)) + " new to points " + strconv.Itoa(int(toBal)))
 	err = stub.PutState(args[0], []byte(strconv.Itoa(int(fromBal)))) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
