@@ -124,6 +124,8 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	var jsonResp string
 	var err error
 	var fromState, toState []byte
+	var fromBal, toBal int64
+	var points int
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting from & to usernames and number of points")
@@ -135,33 +137,33 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-	buf1 := bytes.NewBuffer(fromState)
-	fromBal, err2 := binary.ReadVarint(buf1)
-	if err2 != nil {
+	fromBuf := bytes.NewBuffer(fromState)
+	fromBal, err = binary.ReadVarint(fromBuf)
+	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
 	//	transfer points
-	points, err3 := strconv.Atoi(args[2])
-	if err3 != nil {
+	points, err = strconv.Atoi(args[2])
+	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
 		return nil, errors.New(jsonResp)
 	}
 	if fromBal < int64(points) {
-		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
 	//	to balance
-	toState, err4 := stub.GetState(args[1])
-	if err4 != nil {
+	toState, err = stub.GetState(args[1])
+	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-	buf2 := bytes.NewBuffer(toState)
-	toBal, err5 := binary.ReadVarint(buf2)
-	if err5 != nil {
+	toBuf := bytes.NewBuffer(toState)
+	toBal, err = binary.ReadVarint(toBuf)
+	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
