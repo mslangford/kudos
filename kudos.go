@@ -17,8 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -57,6 +60,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.Init(stub, "init", args)
 	} else if function == "write" {
 		return t.write(stub, args)
+	} else if function == "transfer" {
+		return t.transfer(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -112,4 +117,66 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 	}
 
 	return valAsbytes, nil
+}
+
+// Transfer points between users
+func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var jsonResp string
+	var err error
+	var fromState, toState []byte
+
+	if len(args) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting from & to usernames and number of points")
+	}
+
+	//	from balance
+	fromState, err = stub.GetState(args[0])
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+	buf1 := bytes.NewBuffer(fromState)
+	fromBal, err2 := binary.ReadVarint(buf1)
+	if err2 != nil {
+		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	//	transfer points
+	points, err3 := strconv.Atoi(args[2])
+	if err3 != nil {
+		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
+		return nil, errors.New(jsonResp)
+	}
+	if fromBal < int64(points) {
+		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	//	to balance
+	toState, err4 := stub.GetState(args[1])
+	if err4 != nil {
+		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+	buf2 := bytes.NewBuffer(toState)
+	toBal, err5 := binary.ReadVarint(buf2)
+	if err5 != nil {
+		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	//	apply transfer
+	toBal = toBal + int64(points)
+	fromBal = fromBal - int64(points)
+	err = stub.PutState(args[0], []byte(strconv.Itoa(int(fromBal)))) //write the variable into the chaincode state
+	if err != nil {
+		return nil, err
+	}
+	err = stub.PutState(args[1], []byte(strconv.Itoa(int(toBal)))) //write the variable into the chaincode state
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
