@@ -139,7 +139,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
 		return nil, errors.New(jsonResp)
 	}
-	fmt.Println("from bal " + strconv.Itoa(int(fromBal)) + " points " strconv.Itoa(points))
+	fmt.Println("from bal " + strconv.Itoa(int(fromBal)) + " points " + strconv.Itoa(points))
 	if fromBal < int64(points) {
 		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
