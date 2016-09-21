@@ -40,11 +40,11 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 
 // Invoke isur entry point to invoke a chaincode function
 func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
 
 	// Handle different functions
 	if function == "init" {
 		return t.Init(stub, "init", args)
+	fmt.Println("invoke is running " + function)
 	} else if function == "write" {
 		return t.write(stub, args)
 	} else if function == "transfer" {
@@ -68,7 +68,6 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 	return nil, errors.New("Received unknown function query")
 }
 
-// write - invoke function to write key/value pair
 func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var key, value string
 	var err error
@@ -78,6 +77,7 @@ func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte
 		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
 	}
 
+// write - invoke function to write key/value pair
 	key = args[0] //rename for funsies
 	value = args[1]
 	err = stub.PutState(key, []byte(value)) //write the variable into the chaincode state
@@ -139,6 +139,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
 		return nil, errors.New(jsonResp)
 	}
+	fmt.Println("from bal " + strconv.Itoa(int(fromBal)) + " points " strconv.Itoa(points))
 	if fromBal < int64(points) {
 		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
