@@ -4,8 +4,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"strconv"
@@ -30,7 +28,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 
 	for i := 0;  i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
-//		err = stub.PutState(args[i], []byte(args[i+1]))
+		err = stub.PutState(args[i], []byte(args[i+1]))
 		if err != nil {
 			return nil, err
 		}
@@ -112,8 +110,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	var jsonResp string
 	var err error
 	var fromState, toState []byte
-	var fromBal, toBal int64
-	var points int
+	var fromBal, toBal, points int
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting from & to usernames and number of points")
@@ -126,9 +123,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-	fmt.Println("from state: " + string(fromState))
-	fromBuf := bytes.NewBuffer(fromState)
-	fromBal, err = binary.ReadVarint(fromBuf)
+	fromBal, err = strconv.Atoi(string(fromState))
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
@@ -142,7 +137,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		return nil, errors.New(jsonResp)
 	}
 	fmt.Println("from bal " + strconv.Itoa(int(fromBal)) + " points " + strconv.Itoa(points))
-	if fromBal < int64(points) {
+	if fromBal < points {
 		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
@@ -154,16 +149,15 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-	toBuf := bytes.NewBuffer(toState)
-	toBal, err = binary.ReadVarint(toBuf)
+	fromBal, err = strconv.Atoi(string(toState))
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
 	//	apply transfer
-	toBal = toBal + int64(points)
-	fromBal = fromBal - int64(points)
+	toBal = toBal + points
+	fromBal = fromBal - points
 	fmt.Println("apply transfer - new from points " + strconv.Itoa(int(fromBal)) + " new to points " + strconv.Itoa(int(toBal)))
 	err = stub.PutState(args[0], []byte(strconv.Itoa(int(fromBal)))) //write the variable into the chaincode state
 	if err != nil {
