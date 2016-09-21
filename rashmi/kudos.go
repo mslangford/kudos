@@ -18,10 +18,10 @@ type SimpleChaincode struct {
 }
 
 func main() {
-	err := shim.Start(new(SimpleChaincode))
-	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
-	}
+//	err := shim.Start(new(SimpleChaincode))
+//	if err != nil {
+//		fmt.Printf("Error starting Simple chaincode: %s", err)
+//	}
 }
 
 // Init resets all the things
@@ -125,6 +125,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
+	fmt.Println("from state: " + string(fromState))
 	fromBuf := bytes.NewBuffer(fromState)
 	fromBal, err = binary.ReadVarint(fromBuf)
 	if err != nil {
