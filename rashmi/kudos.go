@@ -18,10 +18,10 @@ type SimpleChaincode struct {
 }
 
 func main() {
-//	err := shim.Start(new(SimpleChaincode))
-//	if err != nil {
-//		fmt.Printf("Error starting Simple chaincode: %s", err)
-//	}
+	err := shim.Start(new(SimpleChaincode))
+	if err != nil {
+		fmt.Printf("Error starting Simple chaincode: %s", err)
+	}
 }
 
 // Init resets all the things
@@ -29,6 +29,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 	var err error
 
 	for i := 0;  i < len(args); i = i + 2 {
+		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
 		err = stub.PutState(args[i], []byte(args[i+1]))
 		if err != nil {
 			return nil, err
