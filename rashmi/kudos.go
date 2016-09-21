@@ -30,7 +30,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 
 	for i := 0;  i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
-		err = stub.PutState(args[i], []byte(args[i+1]))
+//		err = stub.PutState(args[i], []byte(args[i+1]))
 		if err != nil {
 			return nil, err
 		}
