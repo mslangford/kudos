@@ -125,7 +125,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 	fromBal, err = strconv.Atoi(string(fromState))
 	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+		jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
@@ -136,7 +136,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
 		return nil, errors.New(jsonResp)
 	}
-	fmt.Println("from bal " + strconv.Itoa(int(fromBal)) + " points " + strconv.Itoa(points))
+	fmt.Println("points: " + strconv.Itoa(points))
 	if fromBal < points {
 		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
@@ -149,21 +149,21 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-	fromBal, err = strconv.Atoi(string(toState))
+	toBal, err = strconv.Atoi(string(toState))
 	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
+		jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
 	//	apply transfer
-	toBal = toBal + points
 	fromBal = fromBal - points
-	fmt.Println("apply transfer - new from points " + strconv.Itoa(int(fromBal)) + " new to points " + strconv.Itoa(int(toBal)))
-	err = stub.PutState(args[0], []byte(strconv.Itoa(int(fromBal)))) //write the variable into the chaincode state
+	toBal = toBal + points
+	fmt.Println("apply transfer - new from points " + strconv.Itoa(fromBal) + " new to points " + strconv.Itoa(toBal))
+	err = stub.PutState(args[0], []byte(strconv.Itoa(fromBal))) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
 	}
-	err = stub.PutState(args[1], []byte(strconv.Itoa(int(toBal)))) //write the variable into the chaincode state
+	err = stub.PutState(args[1], []byte(strconv.Itoa(toBal))) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
 	}
