@@ -1,5 +1,5 @@
 /*
-*/
+ */
 
 package main
 
@@ -26,13 +26,13 @@ func main() {
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
 
-	for i := 0;  i < len(args); i = i + 2 {
+	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
 		err = stub.PutState(args[i], []byte(args[i+1]))
 		if err != nil {
 			return nil, err
 		}
-	}	
+	}
 
 	return nil, nil
 }
@@ -41,9 +41,9 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 
 	// Handle different functions
+	fmt.Println("invoke is running " + function)
 	if function == "init" {
 		return t.Init(stub, "init", args)
-	fmt.Println("invoke is running " + function)
 	} else if function == "write" {
 		return t.write(stub, args)
 	} else if function == "transfer" {
@@ -76,7 +76,7 @@ func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte
 		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
 	}
 
-// write - invoke function to write key/value pair
+	// write - invoke function to write key/value pair
 	key = args[0] //rename for funsies
 	value = args[1]
 	err = stub.PutState(key, []byte(value)) //write the variable into the chaincode state
