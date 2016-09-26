@@ -132,7 +132,11 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 		return nil, errors.New(jsonResp)
 	}
 
-	return valAsbytes, nil
+	tab := KudosTab{}
+	json.Unmarshal(valAsbytes, &tab) //un stringify it aka JSON.parse()
+	jsonAsBytes, _ := json.Marshal(tab)
+
+	return jsonAsBytes, nil
 }
 
 // Transfer points between users
