@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,6 +14,15 @@ import (
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+
+type Kudos struct {
+	Name    string `json:"name"`
+	Balance int    `json:"balance"`
+}
+
+type KudosTab struct {
+	Balances []Kudos `json:"balances"`
 }
 
 func main() {
@@ -25,6 +35,9 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
+	var bal Kudos
+	var balTab KudosTab
+	var j int
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
@@ -32,7 +45,24 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		if err != nil {
 			return nil, err
 		}
+		bal.Name = args[i]
+		bal.Balance, err = strconv.Atoi(args[i+1])
+		if err != nil {
+			return nil, err
+		}
+		balTab.Balances[j] = bal
+		j++
 	}
+
+	tab := KudosTab{}
+	tab.Balances = balTab.Balances //change the user
+
+	jsonAsBytes, _ := json.Marshal(tab)
+	err = stub.PutState("kudos", jsonAsBytes) //rewrite the marble with id as key
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("kudos: " + string(jsonAsBytes))
 
 	return nil, nil
 }
