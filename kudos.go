@@ -39,6 +39,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 	var balTab KudosTab
 	var j int
 
+	j = 0
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
 		err = stub.PutState(args[i], []byte(args[i+1]))
@@ -50,6 +51,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		if err != nil {
 			return nil, err
 		}
+		balTab.Balances = balTab.Balances[0:j]
 		balTab.Balances[j] = bal
 		j++
 	}
