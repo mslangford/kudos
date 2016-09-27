@@ -4,7 +4,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -14,15 +13,6 @@ import (
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
-}
-
-type Kudos struct {
-	Name    string `json:"name"`
-	Balance int    `json:"balance"`
-}
-
-type KudosTab struct {
-	Balances []Kudos `json:"balances"`
 }
 
 func main() {
@@ -35,36 +25,14 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
-	var bal Kudos
-	var balTab KudosTab
-	var j int
 
-	j = 0
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
 		err = stub.PutState(args[i], []byte(args[i+1]))
 		if err != nil {
 			return nil, err
 		}
-		bal.Name = args[i]
-		bal.Balance, err = strconv.Atoi(args[i+1])
-		if err != nil {
-			return nil, err
-		}
-		balTab.Balances = balTab.Balances[0:j]
-		balTab.Balances[j] = bal
-		j++
 	}
-
-	tab := KudosTab{}
-	tab.Balances = balTab.Balances //change the user
-
-	jsonAsBytes, _ := json.Marshal(tab)
-	err = stub.PutState("kudos", jsonAsBytes) //rewrite the marble with id as key
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("kudos: " + string(jsonAsBytes))
 
 	return nil, nil
 }
@@ -134,11 +102,7 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 		return nil, errors.New(jsonResp)
 	}
 
-	tab := KudosTab{}
-	json.Unmarshal(valAsbytes, &tab) //un stringify it aka JSON.parse()
-	jsonAsBytes, _ := json.Marshal(tab)
-
-	return jsonAsBytes, nil
+	return valAsbytes, nil
 }
 
 // Transfer points between users
