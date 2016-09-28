@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,6 +14,17 @@ import (
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+
+type Account struct {
+	ID           string `json:"id"`
+	PointBalance int    `json:"pointBalance"`
+}
+
+type Transaction struct {
+	FromID string `json:"fromID"`
+	ToID   string `json:"toID"`
+	Points int    `json:"points"`
 }
 
 func main() {
@@ -25,6 +37,8 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
+	var account Account
+	var accountIDs []string
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
@@ -32,7 +46,21 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		if err != nil {
 			return nil, err
 		}
+		points, err := strconv.Atoi(args[i+1])
+		if err != nil {
+			return nil, err
+		}
+		account = Account{ID: args[i], PointBalance: points}
+		accountBytes, err := json.Marshal(&account)
+		if err != nil {
+			fmt.Println("error creating account" + account.ID)
+			return nil, errors.New("Error creating account " + account.ID)
+		}
+		err = stub.PutState("ID:"+account.ID, accountBytes)
+		accountIDs = append(accountIDs, account.ID)
 	}
+	accountIDBytes, _ := json.Marshal(&accountIDs)
+	err = stub.PutState("AccountIDs", accountIDBytes)
 
 	return nil, nil
 }
