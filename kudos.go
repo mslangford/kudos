@@ -38,7 +38,7 @@ func main() {
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
 	var account Account
-	var accountIDs []string
+	var accounts []Account
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
@@ -57,10 +57,10 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 			return nil, errors.New("Error creating account " + account.ID)
 		}
 		err = stub.PutState("ID:"+account.ID, accountBytes)
-		accountIDs = append(accountIDs, account.ID)
+		accounts = append(accounts, account)
 	}
-	accountIDBytes, _ := json.Marshal(&accountIDs)
-	err = stub.PutState("AccountIDs", accountIDBytes)
+	accountsBytes, _ := json.Marshal(&accounts)
+	err = stub.PutState("accounts", accountsBytes)
 
 	return nil, nil
 }
