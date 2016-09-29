@@ -190,6 +190,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	accountsBytes, err := stub.GetState("accounts")
 	err = json.Unmarshal(accountsBytes, &accounts)
 	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to convert balances\"}"
 		return nil, err
 	}
 	for i := 0; i < len(accounts); i++ {
