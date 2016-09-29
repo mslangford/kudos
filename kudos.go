@@ -189,6 +189,9 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	// get balances from accounts array
 	accountsBytes, err := stub.GetState("accounts")
 	err = json.Unmarshal(accountsBytes, &accounts)
+	if err != nil {
+		return nil, err
+	}
 	for i := 0; i < len(accounts); i++ {
 		if accounts[i].ID == args[0] {
 			fromBal = accounts[i].PointBalance
