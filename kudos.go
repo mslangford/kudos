@@ -135,10 +135,9 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 
 // Transfer points between users
 func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
-	var jsonResp string
 	var err error
 	//	var fromState, toState []byte
-	var fromBal, toBal, points int
+	var fromBal, toBal, points, fromIndex, toIndex int
 	var accounts []Account
 
 	if len(args) != 3 {
@@ -157,20 +156,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 			jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[0] + "\"}"
 			return nil, errors.New(jsonResp)
 		}
-	*/
-	//	transfer points
-	fmt.Println("convert points")
-	points, err = strconv.Atoi(args[2])
-	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to convert points to integer}"
-		return nil, errors.New(jsonResp)
-	}
-	fmt.Println("points: " + strconv.Itoa(points))
-	if fromBal < points {
-		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
-		return nil, errors.New(jsonResp)
-	}
-	/*
+
 		//	to balance
 		fmt.Println("get to balance for: " + args[1])
 		toState, err = stub.GetState(args[1])
@@ -184,6 +170,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 			return nil, errors.New(jsonResp)
 		}
 	*/
+
 	// get balances from accounts array
 	fmt.Println("Retrieving accounts")
 	accountsBytes, err := stub.GetState("accounts")
@@ -200,9 +187,31 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	for i := 0; i < len(accounts); i++ {
 		if accounts[i].ID == args[0] {
 			fromBal = accounts[i].PointBalance
+			fromIndex = i
 		} else if accounts[i].ID == args[1] {
 			toBal = accounts[i].PointBalance
+			toIndex = i
 		}
+	}
+	if fromIndex == 0 {
+		fmt.Println("Could not retrieve balance for " + args[0])
+		return nil, errors.New("Could not retrieve balance for " + args[0])
+	} else if toIndex == 0 {
+		fmt.Println("Could not retrieve balance for " + args[1])
+		return nil, errors.New("Could not retrieve balance for " + args[0])
+	}
+
+	//	transfer points
+	fmt.Println("convert points")
+	points, err = strconv.Atoi(args[2])
+	if err != nil {
+		fmt.Println("Failed to convert points to integer")
+		return nil, errors.New("Failed to convert points to integer")
+	}
+	fmt.Println("points: " + strconv.Itoa(points))
+	if fromBal < points {
+		fmt.Println("Point balance does not cover transfer amount for " + args[0])
+		return nil, errors.New("Point balance does not cover transfer amount for " + args[0])
 	}
 
 	//	apply transfer
@@ -218,6 +227,8 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		return nil, err
 	}
 
+	accounts[fromIndex].PointBalance = fromBal
+	accounts[toIndex].PointBalance = toBal
 	accountsBytes, _ = json.Marshal(&accounts)
 	err = stub.PutState("accounts", accountsBytes)
 
