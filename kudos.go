@@ -48,6 +48,10 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		if err != nil {
 			return nil, err
 		}
+		err = stub.PutState(args[0], []byte(strconv.Itoa(points))) //write the variable into the chaincode state
+		if err != nil {
+			return nil, err
+		}
 		account = Account{ID: args[i], PointBalance: points}
 		accounts = append(accounts, account)
 	}
