@@ -178,12 +178,14 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		fmt.Println("Error retrieving accounts")
 		return nil, errors.New("Error retrieving accounts")
 	}
-	fmt.Println("converting accounts")
+	fmt.Println("Converting accounts")
 	err = json.Unmarshal(accountsBytes, &accounts)
 	if err != nil {
 		fmt.Println("Error converting accounts")
 		return nil, errors.New("Error converting accounts")
 	}
+	fromIndex = -1
+	toIndex = -1
 	for i := 0; i < len(accounts); i++ {
 		if accounts[i].ID == args[0] {
 			fromBal = accounts[i].PointBalance
@@ -193,10 +195,10 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 			toIndex = i
 		}
 	}
-	if fromIndex == 0 {
+	if fromIndex == -1 {
 		fmt.Println("Could not retrieve balance for " + args[0])
 		return nil, errors.New("Could not retrieve balance for " + args[0])
-	} else if toIndex == 0 {
+	} else if toIndex == -1 {
 		fmt.Println("Could not retrieve balance for " + args[1])
 		return nil, errors.New("Could not retrieve balance for " + args[0])
 	}
