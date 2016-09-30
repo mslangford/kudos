@@ -19,6 +19,8 @@ type SimpleChaincode struct {
 type Account struct {
 	ID           string `json:"id"`
 	PointBalance int    `json:"pointBalance"`
+	Out          int    `json:"given"`
+	In           int    `json:"received"`
 }
 
 type Transaction struct {
@@ -36,31 +38,24 @@ func main() {
 
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
-	var err error
 	var account Account
 	var accounts []Account
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
-		err = stub.PutState(args[i], []byte(args[i+1]))
-		if err != nil {
-			return nil, err
-		}
 		points, err := strconv.Atoi(args[i+1])
 		if err != nil {
 			return nil, err
 		}
 		account = Account{ID: args[i], PointBalance: points}
-		accountBytes, err := json.Marshal(&account)
-		if err != nil {
-			fmt.Println("error creating account" + account.ID)
-			return nil, errors.New("Error creating account " + account.ID)
-		}
-		err = stub.PutState("ID:"+account.ID, accountBytes)
 		accounts = append(accounts, account)
 	}
 	accountsBytes, _ := json.Marshal(&accounts)
-	err = stub.PutState("accounts", accountsBytes)
+	err := stub.PutState("accounts", accountsBytes)
+	if err != nil {
+		fmt.Println("error storing accounts" + account.ID)
+		return nil, errors.New("Error storing account " + account.ID)
+	}
 
 	return nil, nil
 }
@@ -139,37 +134,12 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	//	var fromState, toState []byte
 	var fromBal, toBal, points, fromIndex, toIndex int
 	var accounts []Account
+	var transaction Transaction
+	var transactions []Transaction
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting from & to usernames and number of points")
 	}
-	/*
-		//	from balance
-		fmt.Println("get from balance for: " + args[0])
-		fromState, err = stub.GetState(args[0])
-		if err != nil {
-			jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
-			return nil, errors.New(jsonResp)
-		}
-		fromBal, err = strconv.Atoi(string(fromState))
-		if err != nil {
-			jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[0] + "\"}"
-			return nil, errors.New(jsonResp)
-		}
-
-		//	to balance
-		fmt.Println("get to balance for: " + args[1])
-		toState, err = stub.GetState(args[1])
-		if err != nil {
-			jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
-			return nil, errors.New(jsonResp)
-		}
-		toBal, err = strconv.Atoi(string(toState))
-		if err != nil {
-			jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[1] + "\"}"
-			return nil, errors.New(jsonResp)
-		}
-	*/
 
 	// get balances from accounts array
 	fmt.Println("Retrieving accounts")
@@ -210,7 +180,6 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		fmt.Println("Failed to convert points to integer")
 		return nil, errors.New("Failed to convert points to integer")
 	}
-	fmt.Println("points: " + strconv.Itoa(points))
 	if fromBal < points {
 		fmt.Println("Point balance does not cover transfer amount for " + args[0])
 		return nil, errors.New("Point balance does not cover transfer amount for " + args[0])
@@ -219,7 +188,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	//	apply transfer
 	fromBal = fromBal - points
 	toBal = toBal + points
-	fmt.Println("apply transfer - new from points " + strconv.Itoa(fromBal) + " new to points " + strconv.Itoa(toBal))
+	fmt.Println("apply transfer from " + args[0] + " to " + args[1] + " for " + args[3] + " points - new points " + strconv.Itoa(fromBal) + "/" + strconv.Itoa(toBal))
 	err = stub.PutState(args[0], []byte(strconv.Itoa(fromBal))) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
@@ -229,10 +198,27 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		return nil, err
 	}
 
+	// update accounts
 	accounts[fromIndex].PointBalance = fromBal
+	accounts[fromIndex].Out = accounts[fromIndex].Out + points
 	accounts[toIndex].PointBalance = toBal
+	accounts[toIndex].In = accounts[toIndex].In + points
 	accountsBytes, _ = json.Marshal(&accounts)
 	err = stub.PutState("accounts", accountsBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// add transaction
+	transaction.FromID = args[0]
+	transaction.ToID = args[1]
+	transaction.Points = points
+	transactions = append(transactions, transaction)
+	transBytes, _ := json.Marshal(&transactions)
+	err = stub.PutState("transactions", transBytes)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
