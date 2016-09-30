@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,6 +14,17 @@ import (
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+
+type Account struct {
+	ID           string `json:"id"`
+	PointBalance int    `json:"pointBalance"`
+}
+
+type Transaction struct {
+	FromID string `json:"fromID"`
+	ToID   string `json:"toID"`
+	Points int    `json:"points"`
 }
 
 func main() {
@@ -25,6 +37,8 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var err error
+	var account Account
+	var accounts []Account
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
@@ -32,7 +46,21 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		if err != nil {
 			return nil, err
 		}
+		points, err := strconv.Atoi(args[i+1])
+		if err != nil {
+			return nil, err
+		}
+		account = Account{ID: args[i], PointBalance: points}
+		accountBytes, err := json.Marshal(&account)
+		if err != nil {
+			fmt.Println("error creating account" + account.ID)
+			return nil, errors.New("Error creating account " + account.ID)
+		}
+		err = stub.PutState("ID:"+account.ID, accountBytes)
+		accounts = append(accounts, account)
 	}
+	accountsBytes, _ := json.Marshal(&accounts)
+	err = stub.PutState("accounts", accountsBytes)
 
 	return nil, nil
 }
@@ -44,8 +72,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 	fmt.Println("invoke is running " + function)
 	if function == "init" {
 		return t.Init(stub, "init", args)
-	} else if function == "write" {
-		return t.write(stub, args)
+		//	} else if function == "write" {
+		//		return t.write(stub, args)
 	} else if function == "transfer" {
 		return t.transfer(stub, args)
 	}
@@ -67,15 +95,14 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 	return nil, errors.New("Received unknown function query")
 }
 
+/*
 func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var key, value string
 	var err error
 	fmt.Println("running write()")
-
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
 	}
-
 	// write - invoke function to write key/value pair
 	key = args[0] //rename for funsies
 	value = args[1]
@@ -85,6 +112,7 @@ func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte
 	}
 	return nil, nil
 }
+*/
 
 // read - query function to read key/value pair
 func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
@@ -109,26 +137,27 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var jsonResp string
 	var err error
-	var fromState, toState []byte
+	//	var fromState, toState []byte
 	var fromBal, toBal, points int
+	var accounts []Account
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting from & to usernames and number of points")
 	}
-
-	//	from balance
-	fmt.Println("from balance: " + args[0])
-	fromState, err = stub.GetState(args[0])
-	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
-		return nil, errors.New(jsonResp)
-	}
-	fromBal, err = strconv.Atoi(string(fromState))
-	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[0] + "\"}"
-		return nil, errors.New(jsonResp)
-	}
-
+	/*
+		//	from balance
+		fmt.Println("get from balance for: " + args[0])
+		fromState, err = stub.GetState(args[0])
+		if err != nil {
+			jsonResp = "{\"Error\":\"Failed to get current balance for " + args[0] + "\"}"
+			return nil, errors.New(jsonResp)
+		}
+		fromBal, err = strconv.Atoi(string(fromState))
+		if err != nil {
+			jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[0] + "\"}"
+			return nil, errors.New(jsonResp)
+		}
+	*/
 	//	transfer points
 	fmt.Println("convert points")
 	points, err = strconv.Atoi(args[2])
@@ -141,18 +170,33 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		jsonResp = "{\"Error\":\"Point balance does not cover transfer amount for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-
-	//	to balance
-	fmt.Println("to balance: " + args[1])
-	toState, err = stub.GetState(args[1])
+	/*
+		//	to balance
+		fmt.Println("get to balance for: " + args[1])
+		toState, err = stub.GetState(args[1])
+		if err != nil {
+			jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
+			return nil, errors.New(jsonResp)
+		}
+		toBal, err = strconv.Atoi(string(toState))
+		if err != nil {
+			jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[1] + "\"}"
+			return nil, errors.New(jsonResp)
+		}
+	*/
+	// get balances from accounts array
+	accountsBytes, err := stub.GetState("accounts")
+	err = json.Unmarshal(accountsBytes, &accounts)
 	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to get current balance for " + args[1] + "\"}"
-		return nil, errors.New(jsonResp)
+		jsonResp = "{\"Error\":\"Failed to convert balances\"}"
+		return nil, err
 	}
-	toBal, err = strconv.Atoi(string(toState))
-	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to convert current balance for " + args[1] + "\"}"
-		return nil, errors.New(jsonResp)
+	for i := 0; i < len(accounts); i++ {
+		if accounts[i].ID == args[0] {
+			fromBal = accounts[i].PointBalance
+		} else if accounts[i].ID == args[1] {
+			toBal = accounts[i].PointBalance
+		}
 	}
 
 	//	apply transfer
@@ -167,6 +211,9 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	if err != nil {
 		return nil, err
 	}
+
+	accountsBytes, _ = json.Marshal(&accounts)
+	err = stub.PutState("accounts", accountsBytes)
 
 	return nil, nil
 }
