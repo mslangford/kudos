@@ -188,7 +188,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	//	apply transfer
 	fromBal = fromBal - points
 	toBal = toBal + points
-	fmt.Println("apply transfer from " + args[0] + " to " + args[1] + " for " + args[3] + " points - new points " + strconv.Itoa(fromBal) + "/" + strconv.Itoa(toBal))
+	fmt.Println("apply transfer from " + args[0] + " to " + args[1] + " for " + args[2] + " points - new points " + strconv.Itoa(fromBal) + "/" + strconv.Itoa(toBal))
 	err = stub.PutState(args[0], []byte(strconv.Itoa(fromBal))) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
