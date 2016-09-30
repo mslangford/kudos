@@ -40,6 +40,7 @@ func main() {
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 	var account Account
 	var accounts []Account
+	var transactions []Transaction
 
 	for i := 0; i < len(args); i = i + 2 {
 		fmt.Println("setting balance for " + args[i] + " to " + args[i+1])
@@ -55,6 +56,12 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 	if err != nil {
 		fmt.Println("error storing accounts" + account.ID)
 		return nil, errors.New("Error storing account " + account.ID)
+	}
+	transBytes, _ := json.Marshal(&transactions)
+	err = stub.PutState("transactions", transBytes)
+	if err != nil {
+		fmt.Println("error storing transactions")
+		return nil, errors.New("Error storing transactions")
 	}
 
 	return nil, nil
@@ -210,11 +217,22 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 
 	// add transaction
+	transBytes, err := stub.GetState("transactions")
+	if err != nil {
+		fmt.Println("Error retrieving transactions")
+		return nil, errors.New("Error retrieving transactions")
+	}
+	fmt.Println("Converting transactions")
+	err = json.Unmarshal(transBytes, &transactions)
+	if err != nil {
+		fmt.Println("Error converting transactions")
+		return nil, errors.New("Error converting transactions")
+	}
 	transaction.FromID = args[0]
 	transaction.ToID = args[1]
 	transaction.Points = points
 	transactions = append(transactions, transaction)
-	transBytes, _ := json.Marshal(&transactions)
+	transBytes, _ = json.Marshal(&transactions)
 	err = stub.PutState("transactions", transBytes)
 	if err != nil {
 		return nil, err
