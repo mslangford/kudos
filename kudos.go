@@ -185,11 +185,13 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 		}
 	*/
 	// get balances from accounts array
+	fmt.Println("Retrieving accounts")
 	accountsBytes, err := stub.GetState("accounts")
 	if err != nil {
 		fmt.Println("Error retrieving accounts")
 		return nil, errors.New("Error retrieving accounts")
 	}
+	fmt.Println("converting accounts")
 	err = json.Unmarshal(accountsBytes, &accounts)
 	if err != nil {
 		fmt.Println("Error converting accounts")
