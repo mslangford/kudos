@@ -142,7 +142,6 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 // Transfer points between users
 func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var err error
-	//	var fromState, toState []byte
 	var fromBal, toBal, points, fromIndex, toIndex int
 	var accounts []Account
 	var transaction Transaction
@@ -198,7 +197,7 @@ func (t *SimpleChaincode) transfer(stub *shim.ChaincodeStub, args []string) ([]b
 
 	//	apply transfer
 	fromBal = fromBal - points
-	toBal = toBal + points
+	// toBal = toBal + points - don't include points received in gifting balance
 	fmt.Println("apply transfer from " + args[0] + " to " + args[1] + " for " + args[2] + " points - new points " + strconv.Itoa(fromBal) + "/" + strconv.Itoa(toBal))
 	err = stub.PutState(args[0], []byte(strconv.Itoa(fromBal))) //write the variable into the chaincode state
 	if err != nil {
