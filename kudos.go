@@ -75,6 +75,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		//		return t.write(stub, args)
 	} else if function == "transfer" {
 		return t.transfer(stub, args)
+	} else if function == "addAccount" {
+		return t.addAccount(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -232,6 +234,44 @@ func (t *SimpleChaincode) transfer(stub shim.ChaincodeStubInterface, args []stri
 	err = stub.PutState("transactions", transBytes)
 	if err != nil {
 		return nil, err
+	}
+
+	return nil, nil
+}
+
+// Add account
+func (t *SimpleChaincode) addAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var account Account
+	var accounts []Account
+
+	fmt.Println("setting balance for " + args[0] + " to " + args[1])
+	points, err := strconv.Atoi(args[1])
+	if err != nil {
+		return nil, err
+	}
+	err = stub.PutState(args[0], []byte(strconv.Itoa(points))) //write the variable into the chaincode state
+	if err != nil {
+		return nil, err
+	}
+
+	accountsBytes, err := stub.GetState("accounts")
+	if err != nil {
+		fmt.Println("Error retrieving accounts")
+		return nil, errors.New("Error retrieving accounts")
+	}
+	err = json.Unmarshal(accountsBytes, &accounts)
+	if err != nil {
+		fmt.Println("Error converting accounts")
+		return nil, errors.New("Error converting accounts")
+	}
+
+	account = Account{ID: args[0], PointBalance: points}
+	accounts = append(accounts, account)
+	accountsBytes, _ = json.Marshal(&accounts)
+	err = stub.PutState("accounts", accountsBytes)
+	if err != nil {
+		fmt.Println("error storing accounts" + account.ID)
+		return nil, errors.New("Error storing account " + account.ID)
 	}
 
 	return nil, nil
